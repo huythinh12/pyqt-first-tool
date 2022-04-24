@@ -42,7 +42,9 @@ class MainWindow(QMainWindow):
         # self.ui = uic.loadUi("toolgui.ui",self)
         self.uic = Ui_MainWindow()
         self.uic.setupUi(self)
+
         self.checkResize = False
+        self.startDraw = False
         #test 
         # self.pixmap = QPixmap()
         # self.uic.label.setPixmap(self.pixmap)
@@ -87,6 +89,7 @@ class MainWindow(QMainWindow):
         
     #load img
     def openImage(self):
+        self.startDraw = True
         imagePath, _ = QFileDialog.getOpenFileName()
         self.pixmap = QPixmap(imagePath)
         # self.pixmap.scaled(aspectRatioMode=ig)
@@ -135,7 +138,7 @@ class MainWindow(QMainWindow):
             delta = QPoint(e.globalPos() - self.oldPos)
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.oldPos = e.globalPos()
-        else:
+        elif self.startDraw:
             if self.last_x is None: # First event.
                 self.last_x = e.x()
                 self.last_y = e.y() 
@@ -144,7 +147,7 @@ class MainWindow(QMainWindow):
             painter.drawLine(self.last_x, self.last_y, e.x(), e.y())
             painter.end()
             self.update()
-
+            
             # Update the origin for next time.
             self.last_x = e.x()
             self.last_y = e.y()
