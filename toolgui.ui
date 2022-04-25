@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>477</width>
-    <height>258</height>
+    <width>578</width>
+    <height>553</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -24,6 +24,9 @@
     <width>1</width>
     <height>1</height>
    </size>
+  </property>
+  <property name="mouseTracking">
+   <bool>true</bool>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -98,13 +101,10 @@ color: rgb(255, 255, 255);</string>
        <enum>Qt::NoContextMenu</enum>
       </property>
       <property name="text">
-       <string>Happy Day!!!</string>
-      </property>
-      <property name="pixmap">
-       <pixmap>rule3.png</pixmap>
+       <string>HELLO !!</string>
       </property>
       <property name="scaledContents">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -127,7 +127,7 @@ color: rgb(255, 255, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>477</width>
+     <width>578</width>
      <height>21</height>
     </rect>
    </property>

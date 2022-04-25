@@ -48,21 +48,21 @@ class MainWindow(QMainWindow):
         #test 
         # self.pixmap = QPixmap()
         # self.uic.label.setPixmap(self.pixmap)
-    
+        print("xin upddasdad")
         #-----
 
         #setting main win 
-        self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_DeleteOnClose)
-        self.uic.label.setStyleSheet("background-color: rgba(255,255,255,0.1)")
+        # self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
+        # self.setAttribute(Qt.WA_TranslucentBackground)
+        # self.setAttribute(Qt.WA_DeleteOnClose)
+        # self.uic.label.setStyleSheet("background-color: rgba(255,255,255,0.1)")
+        # self.setWindowOpacity(0.8)
 
         #find child in design
         # 
         # self.fileMenu = self.findChild(QMenuBar, "menubar")
 
         # #signal
-        self.setWindowOpacity(0.8)
         self.openAction = self.findChild(QAction, "actionLoad")   
         self.exitAction = self.findChild(QAction, "actionExit")
 
@@ -112,24 +112,30 @@ class MainWindow(QMainWindow):
 
 
     def mousePressEvent(self, e: QMouseEvent):
+
         self.last_x = None
         self.last_y = None
-        self.uic.label.setScaledContents(False)
         
+        self.uic.label.setScaledContents(False)
+
+      
+        # self.update()
         if e.button() == Qt.MouseButton.RightButton:
-            print("xin")
+            # print("xin")
             self.dragStart = True
             self.oldPos = e.globalPos() # xu ly drag 
         
     def mouseReleaseEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.RightButton:
              self.dragStart = False
+        
         else:
             # print("noneeeeee")
             #refresh point 
             self.last_x = None
             self.last_y = None
-            
+            print(f"self last x release {self.last_x} , self last_y {self.last_y}")
+            print("release")
             #new add
             # self.update()  
 
@@ -138,12 +144,26 @@ class MainWindow(QMainWindow):
             delta = QPoint(e.globalPos() - self.oldPos)
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.oldPos = e.globalPos()
+            
         elif self.startDraw:
-            if self.last_x is None: # First event.
-                self.last_x = e.x()
-                self.last_y = e.y() 
+            if self.last_x is None or self.last_y is None: # First event.
+                self.last_x = e.pos().x()
+                self.last_y = e.pos().y()
                 return # Ignore the first time.
+            # self.last_x = e.x()
+            # self.last_y = e.y() 
+            # print(f"e.x : {e.x} , e.y {e.y}")
+            
+            
+            #initial painter 
             painter = QPainter(self.uic.label.pixmap())
+            # painter.scale(self.uic.label.rect().x(),self.uic.label.rect().y())
+            #setup pen 
+            pen = QPen()
+            pen.setWidth(5)
+            pen.setColor(QColor(204,0,0))
+            painter.setPen(pen)
+
             painter.drawLine(self.last_x, self.last_y, e.x(), e.y())
             painter.end()
             self.update()
@@ -200,9 +220,10 @@ class MainWindow(QMainWindow):
       
 
     def resizeEvent(self,e: QResizeEvent):
-        self.uic.label.setScaledContents(True)
-      
-         
+        # self.uic.label.setScaledContents(True)
+        # self.update()
+
+     
         
         # self.uic.label.setPixmap(self.pixmap.scaled(self.uic.label.width(),self.uic.label.height(),aspectRatioMode=0))
 
@@ -217,12 +238,17 @@ class MainWindow(QMainWindow):
         # self.uic.label.resize(self.width(), self.height())
         # self.uic.label.setSizePolicy(QSizePolicy.expandingDirections,QSizePolicy.expandingDirections)
         if self.checkResize:
-            
             self.myscalePixmap = self.pixmap.scaled(self.uic.label.size(),aspectRatioMode=0,transformMode=0)
             self.uic.label.setPixmap(self.myscalePixmap)
-        
-            # print("resize ")
 
+            # print("resize ")
+            # painter = QPainter(self.label.pixmap())
+            # pen = QPen()
+            # pen.setWidth(40)
+            # pen.setColor(QColor('red'))
+            # painter.setPen(pen)
+            # painter.drawPoint(200, 150)
+            # painter.end()
         #    self.uic.label.setScaledContents(True)
 
 
@@ -235,7 +261,19 @@ class MainWindow(QMainWindow):
             # self.uic.label.setPixmap(self.savedPixmapSize)
             # self.uic.label(self.pixmap.scaled(self.size()))
 
-          
+    def keyPressEvent(self, e: QKeyEvent):
+        if e.key() == Qt.Key.Key_Space:
+            print("nut space")
+            self.update()
+            painter = QPainter(self.uic.label.pixmap())
+            pen = QPen()
+            pen.setWidth(10)
+            pen.setColor(QColor('blue'))
+            painter.setPen(pen)
+            painter.drawLine(QPoint(0,40),QPoint(100,100))            
+            painter.end()
+            
+
 
         
             
