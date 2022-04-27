@@ -209,7 +209,7 @@ class Window(QMainWindow):
         """
         # menus
         mainMenu = self.menuBar()
-        fileMenu = mainMenu.addMenu(" File")  # the space is required as "File" is reserved in Mac
+        fileMenu = mainMenu.addMenu(" File") 
         drawMenu = mainMenu.addMenu("Draw")
         helpMenu = mainMenu.addMenu("Help")
 
