@@ -3,8 +3,8 @@ from http.cookies import _quote
 from turtle import update
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5 import uic
 from PyQt5.QtCore import *
+from PyQt5 import uic
 from tool_gui_core import Ui_MainWindow
 import sys
 
@@ -218,7 +218,9 @@ class MainWindow(QMainWindow):
         # self.last_x = e.x()
         # self.last_y = e.y()
       
-
+    def paintEvent(self, event):
+        canvasPainter = QPainter(self)
+        canvasPainter.drawImage(self.rect(), self.uic.label.pixmap(), self.uic.label.pixmap().rect())
     def resizeEvent(self,e: QResizeEvent):
         # self.uic.label.setScaledContents(True)
         # self.update()
@@ -240,7 +242,7 @@ class MainWindow(QMainWindow):
         if self.checkResize:
             self.myscalePixmap = self.pixmap.scaled(self.uic.label.size(),aspectRatioMode=0,transformMode=0)
             self.uic.label.setPixmap(self.myscalePixmap)
-
+            self.update()
             # print("resize ")
             # painter = QPainter(self.label.pixmap())
             # pen = QPen()

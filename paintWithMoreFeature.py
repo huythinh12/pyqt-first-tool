@@ -1,16 +1,14 @@
-"""
-Imports the Python libraries needed to the project.
-"""
 import sys
 from enum import Enum
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QMainWindow, QGridLayout, QAction, QGroupBox, QRadioButton, QSlider, \
-    QLabel, QPushButton, QApplication, QFileDialog, QColorDialog, QMessageBox
-from PyQt5.QtGui import QIcon, QImage, QPen, QPainter, QColor
-from PyQt5.QtCore import Qt, QPoint, QSize
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 from qtpy import QtCore, QtGui
 
+from main import MainWindow
+
 """
-Defines an enum which represents the drawing modes.
+Tạo các type để vẽ 
 """
 class DrawMode(Enum):
     Point = 1
@@ -18,168 +16,189 @@ class DrawMode(Enum):
 
 
 """
-Class inherited from a QWidget which initializes the toolbox on the left of the application.
+tạo ra vùng tool box nằm bên trái window 
 """
 class ToolBox(QWidget):
     def __init__(self):
         super().__init__()
+        
+        """
+        cài đặt vùng tool box theo giá trị mặc định
+        """
+        self.setMaximumWidth(120)
+        self.setMinimumWidth(120)
 
         """
-        Sets a fix width so the toolbox doesn't get too thin or too large.
-        """
-        self.setMaximumWidth(150)
-        self.setMinimumWidth(150)
-
-        """
-        Sets a vertical box layout as the default layout.
+        sử dụng vertical layout box cho vùng tool
         """
         self.vbox = QVBoxLayout()
         self.setLayout(self.vbox)
 
 
+
 """
-Class inherited from a QWidget which represents our drawing area. 
+tạo ra vùng drawving riêng biệt với window
 """
 class DrawingArea(QWidget):
     def __init__(self):
         super().__init__()
-
+        
+        self.dragStart = False 
+        # self.windowLayout = Window()
+        
         """
-        Initializes two images which will be used later to resize or undo.
+        tạo ra 2 img để dùng cho resize và undo
         """
-        self.resizeSavedImage = QImage(0, 0, QImage.Format_RGB32)
+        
+        self.resizeSavedImage = QImage(0, 0, QImage.Format_RGB32)#width ,height , format color
         self.savedImage = QImage(0, 0, QImage.Format_RGB32)
 
         """
-        Sets our default image with the right size filled in white.
+        cài đặt default cho opacity
+        """
+        self.opacity = 1;
+        """
+        cài đặt default cho image
         """
         self.image = QImage(self.width(), self.height(), QImage.Format_RGB32)
         self.image.fill(Qt.white)
-
         """
-        Sets the draw default settings, such as the brush size, the color or the style.
+        cài đặt default cho brush 
         """
         self.drawing = False
         self.brushSize = 1
         self.brushColor = Qt.black
         self.brushStyle = Qt.SolidLine
-        self.brushCap = Qt.RoundCap
-        self.brushJoin = Qt.RoundJoin
+        self.brushCap = Qt.RoundCap # đường nét kết thúc 
+        self.brushJoin = Qt.RoundJoin # đường nét gấp khúc
         self.drawMode = DrawMode.Point
 
         """
-        Initializes a point that we'll use later to draw lines.
-        Sets a minimum width so the image width is never equal to 0. 
+        khởi tạo point để sử dụng cho drawline sau
+        setMiniumWidth để img có độ rộng tối thiểu khi hiển thị lên màn hình
         """
         self.lastPoint = QPoint()
         self.setMinimumWidth(150)
 
 
     """
-    Method called when the widget is resized.
-    The image needs to be scaled with the new size or problems will occur.
+    update img khi nó được scale với 1 size khác thông qua resizeEvent
     """
     def resizeEvent(self, event):
         self.image = self.image.scaled(self.width(), self.height())
 
-    """
-    Method called when a button of the mouse is pressed.
-    Only the left click is interesting here.
-    """
+
     def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.dragStart = True
+            self.oldPos = event.globalPos()
+            
+
+
         if event.button() == Qt.LeftButton:
             """
-            If the draw mode is set to Point we draw at the position of the mouse.
+            draw mode là point sẽ vẽ từ con trỏ chuột lúc bắt đầu
             """
             if self.drawMode == DrawMode.Point:
-                painter = QPainter(self.image)  # object which allows drawing to take place on an image
+                painter = QPainter(self.image) 
                 painter.setPen(QPen(self.brushColor, self.brushSize, self.brushStyle, self.brushCap, self.brushJoin))
                 painter.drawPoint(event.pos())
-                self.drawing = True  # we are now entering draw mode
-                self.lastPoint = event.pos()  # new point is saved as last point
+                self.drawing = True  # cho phép vẽ nếu là left click
+                self.lastPoint = event.pos()  # new poit save vào last point
             elif self.drawMode == DrawMode.Line:
                 """
-                Else if the draw mode is set to Line we save a first point and 
-                draw a line when a second click is done.
+                xử lý khi ko phải là draw mode point 
                 """
                 if self.lastPoint == QPoint():
                     self.lastPoint = event.pos()
                 else:
-                    painter = QPainter(self.image)  # object which allows drawing to take place on an image
+                    painter = QPainter(self.image)  
                     painter.setPen(QPen(self.brushColor, self.brushSize, self.brushStyle, self.brushCap, self.brushJoin))
                     painter.drawLine(self.lastPoint, event.pos())
                     self.lastPoint = QPoint()
 
             """
-            Tells the library to update the widget, as something might have been drawn.
+            update khi có bất kỳ sự thay đổi nào
             """
             self.update()
 
     """
-    Method called when the mouse is moved.
-    Here it is only used when the draw mode is set to Point and if the user
-    keeps drawing while moving the mouse.
+    mouseMove chỉ xử lý giành cho draw mode =  Point
     """
+
     def mouseMoveEvent(self, event):
+        if self.dragStart:
+            delta = QPoint(event.globalPos() - self.oldPos)
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.oldPos = event.globalPos()
+  
+
         if (event.buttons() & Qt.LeftButton) & self.drawing & (self.drawMode == DrawMode.Point):
-            painter = QPainter(self.image)  # object which allows drawing to take place on an image
-            # allows the selection of brush colour, brush size, line type, cap type, join type
+            painter = QPainter(self.image)  
             painter.setPen(QPen(self.brushColor, self.brushSize, self.brushStyle, self.brushCap, self.brushJoin))
             painter.drawLine(self.lastPoint, event.pos())
             self.lastPoint = event.pos()
             self.update()
 
-    """
-    Method called when a button of the mouse is released.
-    Here again we only are interested about the left click.
-    """
+
+    
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+                self.dragStart = False 
+
         if event.button == Qt.LeftButton:
             """
-            Saves the image before the modification.
+            mỗi khi mouse release saved lại image để dùng cho undo
             """
             self.savedImage = self.resizeSavedImage
             self.resizeSavedImage = self.image
             self.drawing = False
 
     """
-    Method called when a painting event occurs.
+    dùng để hiển thị img và sẽ auto update vẽ lại cái img này mỗi khi có thay đổi
+    lưu ý cái img này chính là để drawzone
     """
     def paintEvent(self, event):
+        print("hihi")
         canvasPainter = QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
 
 
 """
-Main class inherited from a QMainWindow which is the main window of the program.
+main window của chương trình
 """
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        
         """
         Sets some default settings of the window such as the name, the size and the icon.
         """
+        self.dragStart = False
+
         self.setWindowTitle("QPaint")
         self.setGeometry(100, 100, 800, 600)  # top, left, width, height
         self.setWindowIcon(QIcon("./icons/paint-brush.png"))
-
+        self.setStyleSheet("background:brown ") 
+        # self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
+        # self.setAttribute(Qt.WA_TranslucentBackground)
+        # self.setAttribute(Qt.WA_DeleteOnClose)
         """
-        Initializes layouts and call the methods that will initialize 
-        specific parts of the window.
+        Khởi tạo layout cho window và gọi các function cho từng  chức năng 
         """
         self.grid = QGridLayout()
         self.box = ToolBox()
         self.imageArea = DrawingArea()
         self.setBrushSlider()
         self.setBrushStyle()
-        self.setBrushCap()
-        self.setBrushJoin()
+        self.setOpacitySlider()
+        self.setButtonTransparent()
+        # self.setBrushCap()
+        # self.setBrushJoin()
         self.setColorChanger()
-
+        
         """
-        Creates a grid with the toolbox and the drawing area,
-        which we both set in a widget which is the central widget of our window.
+        tạo grid cho toàn window 
         """
         self.grid.addWidget(self.box, 0, 0, 1, 1)
         self.grid.addWidget(self.imageArea, 0, 1, 1, 6)
@@ -188,7 +207,7 @@ class Window(QMainWindow):
         self.setCentralWidget(win)
 
         """
-        Creates the menu bar of our window with 3 menus.
+        tạo menubar
         """
         # menus
         mainMenu = self.menuBar()
@@ -197,112 +216,101 @@ class Window(QMainWindow):
         helpMenu = mainMenu.addMenu("Help")
 
         """
-        Creates the Save action and adds it to the "File" menu.
+        tạo save và add vào file menu
         """
-        saveAction = QAction(QIcon("./icons/save.png"), "Save", self)
+        saveAction = QAction("Save", self)
         saveAction.setShortcut("Ctrl+S")
         fileMenu.addAction(saveAction)
         """
-        When the menu option is selected or the shortcut is used the save action is triggered.
+        khi menu được chọn thì shortcut cũng sẽ trigger
         """
         saveAction.triggered.connect(self.save)
 
         """
-        Creates the Open action and adds it to the "File" menu.
+        tạo open và add vào file menu
         """
         openAction = QAction(QIcon("./icons/open.png"), "Open", self)
         openAction.setShortcut("Ctrl+O")
         fileMenu.addAction(openAction)
-        """
-        When the menu option is selected or the shortcut is used the open action is triggered.
-        """
+
         openAction.triggered.connect(self.open)
 
         """
-        Creates the Undo action and adds it to the "File" menu.
+        tạo undo và add vào file menu
         """
         undoAction = QAction(QIcon("./icons/undo.png"), "Undo", self)
         undoAction.setShortcut("Ctrl+Z")
         fileMenu.addAction(undoAction)
-        """
-        When the menu option is selected or the shortcut is used the undo action is triggered.
-        """
+ 
         undoAction.triggered.connect(self.undo)
 
         """
-        Creates the Clear action and adds it to the "File" menu.
+        tạo clear và add vào file menu
         """
         clearAction = QAction(QIcon("./icons/clear.png"), "Clear", self)
         clearAction.setShortcut("Ctrl+C")
         fileMenu.addAction(clearAction)
-        """
-        When the menu option is selected or the shortcut is used the clear action is triggered.
-        """
+        
         clearAction.triggered.connect(self.clear)
 
         """
-        Creates the Exit action and adds it to the "File" menu.
+        tao exit va add vao file  menu.
         """
         exitAction = QAction(QIcon("./icons/exit.png"), "Exit", self)
         exitAction.setShortcut("Ctrl+Q")
         fileMenu.addAction(exitAction)
-        """
-        When the menu option is selected or the shortcut is used the exit action is triggered.
-        """
+ 
         exitAction.triggered.connect(self.exitProgram)
 
         """
-        Creates the Point action and adds it to the "Draw" menu.
+        tạo draw và add vào draw  menu.
         """
         self.pointAction = QAction("Point", self, checkable=True)
         self.pointAction.setShortcut("Ctrl+P")
         self.pointAction.setChecked(True)
         drawMenu.addAction(self.pointAction)
-        """
-        When the menu option is selected or the shortcut is used the change draw mode action is triggered.
-        """
+   
         self.pointAction.triggered.connect(lambda: self.changeDrawMode(self.pointAction))
 
         """
-        Creates the Line action and adds it to the "Draw" menu.
+        tạo draw line và add vào draw menu.
         """
         self.lineAction = QAction("Line", self, checkable=True)
         self.lineAction.setShortcut("Ctrl+L")
         drawMenu.addAction(self.lineAction)
-        """
-        When the menu option is selected or the shortcut is used the change draw mode action is triggered.
-        """
+   
         self.lineAction.triggered.connect(lambda: self.changeDrawMode(self.lineAction))
 
         """
-        Creates the About action and adds it to the "Help" menu.
+       tạo action aobout và add vào  "Help" menu.
         """
         aboutAction = QAction(QIcon("./icons/about.png"), "About", self)
         aboutAction.setShortcut("Ctrl+I")
         helpMenu.addAction(aboutAction)
-        """
-        When the menu option is selected or the shortcut is used the about action is triggered.
-        """
+      
         aboutAction.triggered.connect(self.about)
 
-        """
-        Creates the Help action and adds it to the "Help" menu.
-        """
-        helpAction = QAction(QIcon("./icons/help.png"), "Help", self)
-        helpAction.setShortcut("Ctrl+H")
-        helpMenu.addAction(helpAction)
-        """
-        When the menu option is selected or the shortcut is used the help action is triggered.
-        """
-        helpAction.triggered.connect(self.help)
+
 
         """
-        Updates the widget with the default settings.
+        update với setting default
         """
         self.imageArea.update()
-
+    def mousePressEvent(self, e: QtGui.QMouseEvent):
+        if e.button() == Qt.MouseButton.RightButton:
+            print("phai chuot nè")
+            self.dragStart = True
+            self.oldPos = e.globalPos()
+    def mouseReleaseEvent(self, e: QtGui.QMouseEvent):
+        if e.button() == Qt.MouseButton.RightButton:
+            self.dragStart = False 
+    def mouseMoveEvent(self, e: QtGui.QMouseEvent):
+        if self.dragStart:
+            delta = QPoint(e.globalPos() - self.oldPos)
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.oldPos = e.globalPos()
     """
-    Method which changes the draw mode depending on which action has been called.
+    thay đổi draw mode
     """
     def changeDrawMode(self, check):
         if check.text() == "Point":
@@ -313,53 +321,22 @@ class Window(QMainWindow):
             self.pointAction.setChecked(False)
             self.lineAction.setChecked(True)
             self.imageArea.drawMode = DrawMode.Line
+        self.update()
         """
-        Resets the saved point.
+        Resets lại Qpoint nếu ko nó vẫn sẽ nối tiếp từ draw mode này sang drawmode kia
         """
+        print(QPoint() )
         self.imageArea.lastPoint = QPoint()
 
     """
-    Initializes the layout on which we can change the Join setting of the brush.
-    """
-    def setBrushJoin(self):
-        self.brush_join_type = QGroupBox("Brush join")
-        self.brush_join_type.setMaximumHeight(100)
-
-        """
-        Creates the radio buttons to let us make a choice between these 3 options.
-        Each one is connected to a method which will change the setting depending on which
-        button is clicked.
-        """
-        self.joinBtn1 = QRadioButton("Round")
-        self.joinBtn1.clicked.connect(lambda: self.changeBrushJoin(self.joinBtn1))
-        self.joinBtn2 = QRadioButton("Miter")
-        self.joinBtn2.clicked.connect(lambda: self.changeBrushJoin(self.joinBtn2))
-        self.joinBtn3 = QRadioButton("Bevel")
-        self.joinBtn3.clicked.connect(lambda: self.changeBrushJoin(self.joinBtn3))
-
-        """
-        Sets a default value.
-        Adds the buttons to the layout which is added to the parent box.
-        """
-        self.joinBtn1.setChecked(True)
-        qv = QVBoxLayout()
-        qv.addWidget(self.joinBtn1)
-        qv.addWidget(self.joinBtn2)
-        qv.addWidget(self.joinBtn3)
-        self.brush_join_type.setLayout(qv)
-        self.box.vbox.addWidget(self.brush_join_type)
-
-    """
-    Initializes the layout on which we can change the Type setting of the brush.
+    tạo layout choh groupbox cho type brush
     """
     def setBrushStyle(self):
         self.brush_line_type = QGroupBox("Brush style")
         self.brush_line_type.setMaximumHeight(100)
 
         """
-        Creates the radio buttons to let us make a choice between these 3 options.
-        Each one is connected to a method which will change the setting depending on which
-        button is clicked.
+        Type của brush
         """
         self.styleBtn1 = QRadioButton(" Solid")
         self.styleBtn1.setIcon(QIcon("./icons/solid.png"))
@@ -377,8 +354,7 @@ class Window(QMainWindow):
         self.styleBtn3.clicked.connect(lambda: self.changeBrushStyle(self.styleBtn3))
 
         """
-        Sets a default value.
-        Adds the buttons to the layout which is added to the parent box.
+        add widget vào trong layout 
         """
         self.styleBtn1.setChecked(True)
         qv = QVBoxLayout()
@@ -388,70 +364,9 @@ class Window(QMainWindow):
         self.brush_line_type.setLayout(qv)
         self.box.vbox.addWidget(self.brush_line_type)
 
-    """
-    Initializes the layout on which we can change the Cap setting of the brush.
-    """
-    def setBrushCap(self):
-        self.brush_cap_type = QGroupBox("Brush cap")
-        self.brush_cap_type.setMaximumHeight(100)
-
-        """
-        Creates the radio buttons to let us make a choice between these 3 options.
-        Each one is connected to a method which will change the setting depending on which
-        button is clicked.
-        """
-        self.capBtn1 = QRadioButton("Square")
-        self.capBtn1.clicked.connect(lambda: self.changeBrushCap(self.capBtn1))
-        self.capBtn2 = QRadioButton("Flat")
-        self.capBtn2.clicked.connect(lambda: self.changeBrushCap(self.capBtn2))
-        self.capBtn3 = QRadioButton("Round")
-        self.capBtn3.clicked.connect(lambda: self.changeBrushCap(self.capBtn3))
-
-        """
-        Sets a default value.
-        Adds the buttons to the layout which is added to the parent box.
-        """
-        self.capBtn3.setChecked(True)
-        qv = QVBoxLayout()
-        qv.addWidget(self.capBtn1)
-        qv.addWidget(self.capBtn2)
-        qv.addWidget(self.capBtn3)
-        self.brush_cap_type.setLayout(qv)
-        self.box.vbox.addWidget(self.brush_cap_type)
 
     """
-    Method which changes the Join setting of the brush depending
-    on which button has been previously clicked.
-    """
-    def changeBrushJoin(self, btn):
-        if btn.text() == "Round":
-            if btn.isChecked():
-                self.imageArea.brushJoin = Qt.RoundJoin
-        if btn.text() == "Miter":
-            if btn.isChecked():
-                self.imageArea.brushJoin = Qt.MiterJoin
-        if btn.text() == "Bevel":
-            if btn.isChecked():
-                self.imageArea.brushJoin = Qt.BevelJoin
-
-    """
-    Method which changes the Cap setting of the brush depending
-    on which button has been previously clicked.
-    """
-    def changeBrushCap(self, btn):
-        if btn.text() == "Square":
-            if btn.isChecked():
-                self.imageArea.brushCap = Qt.SquareCap
-        if btn.text() == "Flat":
-            if btn.isChecked():
-                self.imageArea.brushCap = Qt.FlatCap
-        if btn.text() == "Round":
-            if btn.isChecked():
-                self.imageArea.brushCap = Qt.RoundCap
-
-    """
-    Method which changes the Type setting of the brush depending
-    on which button has been previously clicked.
+    lựa chọn type setting để vẽ
     """
     def changeBrushStyle(self, btn):
         if btn.text() == " Solid":
@@ -464,15 +379,41 @@ class Window(QMainWindow):
             if btn.isChecked():
                 self.imageArea.brushStyle = Qt.DotLine
 
+    def setButtonTransparent(self):
+        self.groupBoxButton = QGroupBox("Make Transparent Complete")
+        self.groupBoxButton.setMaximumHeight(100)
+
+        self.isTransParent = False
+        self.buttonTransparent = QPushButton("Tramsparent")
+        self.buttonTransparent.clicked.connect(self.transparentWindow)
+
+        qv = QVBoxLayout()
+        qv.addWidget(self.buttonTransparent)
+        self.groupBoxButton.setLayout(qv)
+        self.box.vbox.addWidget(self.groupBoxButton)
+
+    def transparentWindow(self):
+        
+        # self.isTransParent = not self.isTransParent
+        # if self.isTransParent:
+            # self.isTransParent = False
+        # Window.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
+        # Window.setAttribute(Qt.WA_TranslucentBackground)
+        self.repaint()
+            # self.setAttribute(Qt.WA_DeleteOnClose) 
+        # else:
+        #     self.repaint()
+        # pass
+
     """
-    Initializes the layout on which we can change the brush size.
+    Tạo layout để chứa brush size
     """
     def setBrushSlider(self):
         self.groupBoxSlider = QGroupBox("Brush size")
         self.groupBoxSlider.setMaximumHeight(100)
 
         """
-        Sets a vertical slider with a min and a max value.
+        cài đặt giá trị 1-40 cho slide brush
         """
         self.brush_thickness = QSlider(Qt.Horizontal)
         self.brush_thickness.setMinimum(1)
@@ -480,7 +421,7 @@ class Window(QMainWindow):
         self.brush_thickness.valueChanged.connect(self.sizeSliderChange)
 
         """
-        Sets a label to display the size of the brush.
+        hiển thị thông số size của brush
         """
         self.brushSizeLabel = QLabel()
         self.brushSizeLabel.setText("%s px" % self.imageArea.brushSize)
@@ -494,24 +435,62 @@ class Window(QMainWindow):
         self.groupBoxSlider.setLayout(qv)
 
         self.box.vbox.addWidget(self.groupBoxSlider)
+    
+    """
+    Tạo layout để chứa opacity slide
+    """
+    def setOpacitySlider(self):
+        self.groupBoxSliderx = QGroupBox("Opacity")
+        self.groupBoxSliderx.setMaximumHeight(100)
+
+        """
+        cài đặt giá trị 0->1 cho slide brush
+        """
+        self.opacity_thicknesss = QSlider(Qt.Horizontal)
+        self.opacity_thicknesss.setMinimum(60)
+        self.opacity_thicknesss.setMaximum(100)
+        self.opacity_thicknesss.setValue(100)
+        self.opacity_thicknesss.valueChanged.connect(self.opacitySliderChange)
+
+        """
+        hiển thị thông số size của brush
+        """
+        self.opacityLabel = QLabel()
+        self.opacityLabel.setText("%s px" % self.imageArea.opacity)
+
+        """
+       add widget to layout
+        """
+        qv = QVBoxLayout()
+        qv.addWidget(self.opacity_thicknesss)
+        qv.addWidget(self.opacityLabel)
+        self.groupBoxSliderx.setLayout(qv)
+
+        self.box.vbox.addWidget(self.groupBoxSliderx)
 
     """
-    Method which changes the brush size depending on the value 
-    sent from the slider. 
+   thay đổi giá trị dựa trên slider
     """
+    def opacitySliderChange(self, value):
+        newValue = value * 0.01
+        self.imageArea.opacity = newValue
+        self.setWindowOpacity(newValue)
+        self.opacityLabel.setText("%s px" % newValue)
+
+
     def sizeSliderChange(self, value):
         self.imageArea.brushSize = value
         self.brushSizeLabel.setText("%s px" % value)
 
     """
-    Initializes the layout on which we can change the color of the brush.
+    tạo layout cho vùng color
     """
     def setColorChanger(self):
         self.groupBoxColor = QGroupBox("Color")
         self.groupBoxColor.setMaximumHeight(100)
 
         """
-        Initializes a color and sets a button with this color as background.
+        tạo color và cài đặt cho button với màu color này
         """
         self.col = QColor(0, 0, 0)
         self.brush_colour = QPushButton()
@@ -521,7 +500,7 @@ class Window(QMainWindow):
         self.box.vbox.addWidget(self.brush_colour)
 
         """
-        Adds the buttons to the layout which is added to the parent box.
+        add widget to layout
         """
         qv = QVBoxLayout()
         qv.addWidget(self.brush_colour)
@@ -530,7 +509,7 @@ class Window(QMainWindow):
         self.box.vbox.addWidget(self.groupBoxColor)
 
     """
-    Method which displays a color picker and sets the brush color.
+    hiện thị color pick
     """
     def showColorDialog(self):
         self.col = QColorDialog.getColor()
@@ -539,18 +518,16 @@ class Window(QMainWindow):
             self.imageArea.brushColor = self.col
 
     """
-    Method called when the main window is resized.
-    Scales the image area with the new size.
+    scale img với new size
     """
     def resizeEvent(self, a0: QtGui.QResizeEvent):
         if self.imageArea.resizeSavedImage.width() != 0:
             self.imageArea.image = self.imageArea.resizeSavedImage.scaled(self.imageArea.width(), self.imageArea.height(), QtCore.Qt.IgnoreAspectRatio)
         self.imageArea.update()
 
+
     """
-    Method called when we execute the save action.
-    It opens a file dialog in which the user can choose the path of where
-    he would like to save the current image.
+    mở file ra và save lại ở nơi mình muốn
     """
     def save(self):
         filePath, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG(*.png);;JPG(*.jpg *.jpeg);;All Files (*.*)")
@@ -559,9 +536,7 @@ class Window(QMainWindow):
         self.imageArea.image.save(filePath)
 
     """
-    Method called when we execute the open action.
-    It opens a file dialog in which the user can choose the path of the image
-    he wants to open in the program.
+    open file từ device để load lên
     """
     def open(self):
         filePath, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "PNG(*.png);;JPG(*.jpg *.jpeg);;All Files (*.*)")
@@ -571,8 +546,7 @@ class Window(QMainWindow):
             content = f.read()
 
         """
-        Loads the data from the file to the image.
-        Scales it and updates the drawing area.
+        load data file cho vùng img và update khi nó được scale 
         """
         self.imageArea.image.loadFromData(content)
         self.imageArea.image = self.imageArea.image.scaled(self.imageArea.width(), self.imageArea.height(), QtCore.Qt.IgnoreAspectRatio)
@@ -580,81 +554,50 @@ class Window(QMainWindow):
         self.imageArea.update()
 
     """
-    Method called when we execute the undo action.
-    The user can go back to the previous state of the image
-    before the last modification he made.
+    quay trở lại state img trước đó
     """
     def undo(self):
         copyImage = self.imageArea.image
         if self.imageArea.savedImage.width() != 0:
             """
-            If the saved image exists, we set the actual image to the saved one scaled to the right size.
+            khi có saveimage setup image lại cho nó scale ra đúng kích thước 
             """
             self.imageArea.image = self.imageArea.savedImage.scaled(self.imageArea.width(), self.imageArea.height(), QtCore.Qt.IgnoreAspectRatio)
         else:
             """
-            If no saved image exist we just clean the current one.
+            ko có state nào được lưu thì chỉ cần clear cái hiện tại
             """
             self.imageArea.image = QImage(self.imageArea.width(), self.imageArea.height(), QImage.Format_RGB32)
             self.imageArea.image.fill(Qt.white)
         """
-        Sets the saved image as the copy from the screen.
+        gán copyimge cho save khi undo
         """
         self.imageArea.savedImage = copyImage
         self.imageArea.update()
 
     """
-    Method called when we execute the clear action.
-    It fills the image in white and updates it.
+    CLEAR và update lại DrawArea
     """
     def clear(self):
         self.imageArea.image.fill(Qt.white)
         self.imageArea.update()
 
     """
-    Method called when we execute the exit action.
-    Exits the program.
+    EXIT PROGRAM
     """
     def exitProgram(self):
         QtCore.QCoreApplication.quit()
 
-    """
-    Method called when we execute the about action.
-    Displays a message about the program.
-    """
+
     def about(self):
         QMessageBox.about(self, "About QPaint",
                           "<p>This Qt Application is a basic paint program made with PyQt. "
                           "You can draw something by yourself and then save it as a file. "
                           "PNG and JPG files can also be opened and edited.</p>")
 
-    """
-    Method called when we execute the help action.
-    Displays a help message about the program.
-    """
-    def help(self):
-        msg = QMessageBox()
-        msg.setText("Help"
-                    "<p>Welcome on QPaint.</p> "
-                    "<p>On the left side of the screen you can see a toolbox on which you have different boxes. "
-                    "Each of these boxes contains buttons or sliders which allow you to customize the brush you want to"
-                    "draw with.</p>"
-                    "<p>The right size of the screen is the drawing area, where you can draw.</p> "
-                    "<p>The program also has different menus you can see at the top of the window. "
-                    "<p>These menus allow you to open a file, save your image, clean it, or even exit the program.</p>"
-                    "We hope you will enjoy your experience."
-                    "If you encounter any difficulty or need any information "
-                    "you can send an email to nicolas.guillon@epitech.eu.</p>")
-        msg.setWindowTitle("Help")
-        msg.move(self.width() / 2, self.height() / 2)
-        msg.exec_()
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    """
-    Starts a new instance of the main window.
-    """
+
     window = Window()
     window.show()
     app.exec()

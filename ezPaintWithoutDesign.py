@@ -8,17 +8,17 @@ class Window(QMainWindow):
         super().__init__()
 
 
-        title = "Prajjwal's Paint Application"
+        title = "Paint App"
         x = 500
         y = 100
         width = 1080
         height = 720
 
-        icon = "icons/Code_Maniac.jpg"
+        
 
         self.setWindowTitle(title)
         self.setGeometry(x, y, width, height)
-        self.setWindowIcon(QIcon(icon))
+  
 
         self.image = QImage(self.size(), QImage.Format_RGB32)
         self.image.fill(Qt.white)
@@ -32,17 +32,7 @@ class Window(QMainWindow):
         fileMenu = mainMenu.addMenu("File")
         brushSize = mainMenu.addMenu("Brush Size")
         brushColor = mainMenu.addMenu("Brush Color")
-        shapes = mainMenu.addMenu("Add Shapes")
-
-        circleAction = QAction(QIcon("icons/save.png"), "Cicle", self)
-        circleAction.setShortcut("Alt+C")
-        shapes.addAction(circleAction)
-        circleAction.triggered.connect(self.circle)
-
-        rectAction = QAction(QIcon("icons/save.png"), "Rectangle", self)
-        rectAction.setShortcut("Alt+R")
-        shapes.addAction(rectAction)
-        rectAction.triggered.connect(self.rectangle)
+        
 
 
         saveAction = QAction(QIcon("icons/save.png"), "Save",self)
@@ -71,29 +61,29 @@ class Window(QMainWindow):
         brushSize.addAction(ninepxAction)
         ninepxAction.triggered.connect(self.ninePixel)
 
-        blackAction = QAction(QIcon("icons/black.png"), "Black", self)
+        blackAction = QAction("Black", self)
         blackAction.setShortcut("Ctrl+B")
         brushColor.addAction(blackAction)
         blackAction.triggered.connect(self.blackColor)
 
 
-        whitekAction = QAction(QIcon("icons/white.png"), "White", self)
+        whitekAction = QAction("White", self)
         whitekAction.setShortcut("Ctrl+W")
         brushColor.addAction(whitekAction)
         whitekAction.triggered.connect(self.whiteColor)
 
 
-        redAction = QAction(QIcon("icons/red.png"), "Red", self)
+        redAction = QAction("Red", self)
         redAction.setShortcut("Ctrl+R")
         brushColor.addAction(redAction)
         redAction.triggered.connect(self.redColor)
 
-        greenAction = QAction(QIcon("icons/green.png"), "Green", self)
+        greenAction = QAction("Green", self)
         greenAction.setShortcut("Ctrl+G")
         brushColor.addAction(greenAction)
         greenAction.triggered.connect(self.greenColor)
 
-        yellowAction = QAction(QIcon("icons/yellow.png"), "Yellow", self)
+        yellowAction = QAction("Yellow", self)
         yellowAction.setShortcut("Ctrl+Y")
         brushColor.addAction(yellowAction)
         yellowAction.triggered.connect(self.yellowColor)
@@ -174,18 +164,8 @@ class Window(QMainWindow):
 
     def yellowColor(self):
         self.brushColor = Qt.yellow
-
-
-    def circle(self):
-        painter = QPainter(self)
-        painter.setPen(QPen(Qt.green,  5, Qt.SolidLine))
-        painter.setBrush(QBrush(Qt.green, Qt.SolidPattern))
-        painter.drawEllipse(40, 40, 400, 200)
-        pass
     
 
-    def rectangle(self):
-        pass
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
