@@ -179,7 +179,7 @@ class Window(QMainWindow):
         self.setWindowTitle("Tool Main")
         self.setGeometry(100, 100, 800, 600)  # top, left, width, height
         self.setWindowIcon(QIcon("./icons/paint-brush.png"))
-        self.setStyleSheet("background:brown ") 
+        self.setStyleSheet("background: gray ") 
         # self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
         # self.setAttribute(Qt.WA_TranslucentBackground)
         # self.setAttribute(Qt.WA_DeleteOnClose)
