@@ -170,7 +170,7 @@ main window của chương trình
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
-        
+        self.setWindowTitle("Tool Main")
         """
         Sets some default settings of the window such as the name, the size and the icon.
         """
