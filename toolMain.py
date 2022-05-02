@@ -197,9 +197,7 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        """
-        Sets some default settings of the window such as the name, the size and the icon.
-        """
+ 
         self.dragStart = False
         self.isTransParent = False
         
