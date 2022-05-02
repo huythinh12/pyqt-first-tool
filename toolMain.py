@@ -1,8 +1,8 @@
 import sys
 from enum import Enum
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QPainter,QPen,QIcon ,QImage,QColor
+from PyQt5.QtWidgets import QApplication,QWidget,QHBoxLayout,QLabel,QSizeGrip,QVBoxLayout,QGraphicsOpacityEffect,QMainWindow,QGridLayout,QAction,QGroupBox,QRadioButton,QSlider,QFileDialog,QMessageBox,QColorDialog,QPushButton
+from PyQt5.QtCore import QPoint,Qt,QEvent,QObject,QSize
 from qtpy import QtCore, QtGui
 
 from main import MainWindow
@@ -14,6 +14,33 @@ class DrawMode(Enum):
     Point = 1
     Line = 2
 
+class FrameResize(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setMaximumHeight(15)
+        self.setMinimumHeight(15)
+        self.hbox = QHBoxLayout(self)
+        # self.hspace = QSpacerItem(5,5,QSizePolicy.Policy.Expanding ,QSizePolicy.Policy.Minimum)
+        # self.hbox.addItem(self.hspace)
+
+        
+        self.labelResize = QLabel(self)
+        self.labelResize.setText("     Scale")
+        self.labelResize.setStyleSheet("background-color: lightgreen")
+        # self.labelResize.move(100,100)
+        # sel
+        # self.labelResize.setMinimumSize(QSize(0,20))
+        # self.labelResize.setAutoFillBackground(False)
+        
+        QSizeGrip(self.labelResize)
+        
+        self.hbox.addWidget(self.labelResize,0, QtCore.Qt.AlignRight|QtCore.Qt.AlignBottom)
+        # self.hbox.addStretch(1)
+        self.hbox.setContentsMargins(0,0,2,0)
+        self.setLayout(self.hbox)
+        # self.setContentsMargins
+        
+        
 
 """
 tạo ra vùng tool box nằm bên trái window 
@@ -26,7 +53,7 @@ class ToolBox(QWidget):
         cài đặt vùng tool box theo giá trị mặc định
         """
         self.setMaximumWidth(120)
-        self.setMinimumWidth(120)
+        self.setMinimumWidth(50)
 
         """
         sử dụng vertical layout box cho vùng tool
@@ -42,9 +69,8 @@ tạo ra vùng drawving riêng biệt với window
 class DrawingArea(QWidget):
     def __init__(self):
         super().__init__()
-        
         self.dragStart = False 
-        # self.windowLayout = Window()
+        
         
         """
         tạo ra 2 img để dùng cho resize và undo
@@ -61,7 +87,14 @@ class DrawingArea(QWidget):
         cài đặt default cho image
         """
         self.image = QImage(self.width(), self.height(), QImage.Format_RGB32)
-        self.image.fill(Qt.white)
+        # self.image = QImage("rule3.png")
+        self.image.load("rule3.png")
+        # self.image.fill(qRgba(0,0,0,255))
+
+        self.resizeSavedImage = self.image
+
+
+ 
         """
         cài đặt default cho brush 
         """
@@ -86,14 +119,15 @@ class DrawingArea(QWidget):
     """
     def resizeEvent(self, event):
         self.image = self.image.scaled(self.width(), self.height())
-
+        
+    def opacityDrawZone(self,value):
+        op=QGraphicsOpacityEffect(self)
+        # print(f"value ne + {self.opacity }")
+        op.setOpacity(self.opacity) #0 to 1 will cause the fade effect
+        self.setGraphicsEffect(op)
+        self.setAutoFillBackground(False)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
-            self.dragStart = True
-            self.oldPos = event.globalPos()
-            
-
 
         if event.button() == Qt.LeftButton:
             """
@@ -127,12 +161,6 @@ class DrawingArea(QWidget):
     """
 
     def mouseMoveEvent(self, event):
-        if self.dragStart:
-            delta = QPoint(event.globalPos() - self.oldPos)
-            self.move(self.x() + delta.x(), self.y() + delta.y())
-            self.oldPos = event.globalPos()
-  
-
         if (event.buttons() & Qt.LeftButton) & self.drawing & (self.drawMode == DrawMode.Point):
             painter = QPainter(self.image)  
             painter.setPen(QPen(self.brushColor, self.brushSize, self.brushStyle, self.brushCap, self.brushJoin))
@@ -143,8 +171,6 @@ class DrawingArea(QWidget):
 
     
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
-                self.dragStart = False 
 
         if event.button == Qt.LeftButton:
             """
@@ -159,7 +185,7 @@ class DrawingArea(QWidget):
     lưu ý cái img này chính là để drawzone
     """
     def paintEvent(self, event):
-        print("hihi")
+        
         canvasPainter = QPainter(self)
         canvasPainter.drawImage(self.rect(), self.image, self.image.rect())
 
@@ -175,24 +201,27 @@ class Window(QMainWindow):
         Sets some default settings of the window such as the name, the size and the icon.
         """
         self.dragStart = False
-
+        self.isTransParent = False
+        
         self.setWindowTitle("Tool Main")
-        self.setGeometry(100, 100, 800, 600)  # top, left, width, height
+        self.setGeometry(100, 100,800, 600)  # top, left, width, height
         self.setWindowIcon(QIcon("./icons/paint-brush.png"))
-        self.setStyleSheet("background: gray ") 
-        # self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
-        # self.setAttribute(Qt.WA_TranslucentBackground)
-        # self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setStyleSheet("background-color: rgba(255,255,255,0.01)") 
+        
+        self.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         """
         Khởi tạo layout cho window và gọi các function cho từng  chức năng 
         """
         self.grid = QGridLayout()
         self.box = ToolBox()
+        self.frameResize = FrameResize()
         self.imageArea = DrawingArea()
+        self.setMoveTool()
         self.setBrushSlider()
         self.setBrushStyle()
         self.setOpacitySlider()
-        self.setButtonTransparent()
         # self.setBrushCap()
         # self.setBrushJoin()
         self.setColorChanger()
@@ -200,17 +229,30 @@ class Window(QMainWindow):
         """
         tạo grid cho toàn window 
         """
-        self.grid.addWidget(self.box, 0, 0, 1, 1)
+        
+        self.grid.addWidget(self.box, 0, 0, 1, 1) #Qwidget ,int r, int cl, int rspan,int clspan
         self.grid.addWidget(self.imageArea, 0, 1, 1, 6)
+        self.grid.addWidget(self.frameResize,1,1,1,6)
+        
+        
+        self.grid.setContentsMargins(0,0,0,0)
+        self.grid.setVerticalSpacing(0)
+        self.grid.setHorizontalSpacing(0)
+
         win = QWidget()
         win.setLayout(self.grid)
         self.setCentralWidget(win)
+
+
+     
 
         """
         tạo menubar
         """
         # menus
         mainMenu = self.menuBar()
+        
+        
         fileMenu = mainMenu.addMenu(" File")  # the space is required as "File" is reserved in Mac
         drawMenu = mainMenu.addMenu("Draw")
         helpMenu = mainMenu.addMenu("Help")
@@ -296,19 +338,23 @@ class Window(QMainWindow):
         update với setting default
         """
         self.imageArea.update()
+
+
     def mousePressEvent(self, e: QtGui.QMouseEvent):
-        if e.button() == Qt.MouseButton.RightButton:
-            print("phai chuot nè")
+        if e.button() == Qt.MouseButton.LeftButton:
             self.dragStart = True
             self.oldPos = e.globalPos()
     def mouseReleaseEvent(self, e: QtGui.QMouseEvent):
-        if e.button() == Qt.MouseButton.RightButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             self.dragStart = False 
-    def mouseMoveEvent(self, e: QtGui.QMouseEvent):
-        if self.dragStart:
-            delta = QPoint(e.globalPos() - self.oldPos)
-            self.move(self.x() + delta.x(), self.y() + delta.y())
-            self.oldPos = e.globalPos()
+    # def mouseMoveEvent(self, e: QtGui.QMouseEvent):
+    #     if self.dragStart:
+    #         delta = QPoint(e.globalPos() - self.oldPos)
+    #         self.move(self.x() + delta.x(), self.y() + delta.y())
+    #         self.oldPos = e.globalPos()
+
+    def getPosFromDrawingZone(self,oldpos):
+        print(f"old pos {oldpos}")
     """
     thay đổi draw mode
     """
@@ -334,6 +380,7 @@ class Window(QMainWindow):
     def setBrushStyle(self):
         self.brush_line_type = QGroupBox("Brush style")
         self.brush_line_type.setMaximumHeight(100)
+        self.brush_line_type.setMinimumHeight(50)
 
         """
         Type của brush
@@ -379,38 +426,38 @@ class Window(QMainWindow):
             if btn.isChecked():
                 self.imageArea.brushStyle = Qt.DotLine
 
-    def setButtonTransparent(self):
-        self.groupBoxButton = QGroupBox("Make Transparent Complete")
-        self.groupBoxButton.setMaximumHeight(100)
+    def setMoveTool(self):
+        
+        self.groupBox= QGroupBox("Move Zone")
+        self.groupBox.setMaximumHeight(50)
 
-        self.isTransParent = False
-        self.buttonTransparent = QPushButton("Tramsparent")
-        self.buttonTransparent.clicked.connect(self.transparentWindow)
+        
+        self.moveLabel = QLabel("--->Drag Me<---- ")
+        
+        self.moveLabel.installEventFilter(self)
+        # self.moveLabel.installEventFilter(self)
+        # self.buttonTransparent.clicked.connect(self.transparentWindow)
 
         qv = QVBoxLayout()
-        qv.addWidget(self.buttonTransparent)
-        self.groupBoxButton.setLayout(qv)
-        self.box.vbox.addWidget(self.groupBoxButton)
+        qv.addWidget(self.moveLabel)
+        self.groupBox.setLayout(qv)
+        self.box.vbox.addWidget(self.groupBox)
 
-    def transparentWindow(self):
-        
-        # self.isTransParent = not self.isTransParent
-        # if self.isTransParent:
-            # self.isTransParent = False
-        # Window.setWindowFlags(Qt.FramelessWindowHint|Qt.WindowStaysOnTopHint)
-        # Window.setAttribute(Qt.WA_TranslucentBackground)
-        self.repaint()
-            # self.setAttribute(Qt.WA_DeleteOnClose) 
-        # else:
-        #     self.repaint()
+    def eventFilter(self, obj: 'QObject', event: 'QEvent'):
+        if obj == self.moveLabel and event.type() == QEvent.MouseMove:
+            if self.dragStart:
+                self.move(self.pos() + event.globalPos() - self.oldPos)
+                self.oldPos = event.globalPos()
+                event.accept()
+        return False
         # pass
-
     """
     Tạo layout để chứa brush size
     """
     def setBrushSlider(self):
         self.groupBoxSlider = QGroupBox("Brush size")
-        self.groupBoxSlider.setMaximumHeight(100)
+        self.groupBoxSlider.setMaximumHeight(70)
+        self.groupBoxSlider.setMinimumHeight(50)
 
         """
         cài đặt giá trị 1-40 cho slide brush
@@ -435,19 +482,27 @@ class Window(QMainWindow):
         self.groupBoxSlider.setLayout(qv)
 
         self.box.vbox.addWidget(self.groupBoxSlider)
+
+    """
+    thay đổi giá trị dựa trên slider
+    """
+    def sizeSliderChange(self, value):
+        self.imageArea.brushSize = value
+        self.brushSizeLabel.setText("%s px" % value)    
     
     """
     Tạo layout để chứa opacity slide
     """
     def setOpacitySlider(self):
         self.groupBoxSliderx = QGroupBox("Opacity")
-        self.groupBoxSliderx.setMaximumHeight(100)
+        self.groupBoxSliderx.setMaximumHeight(60)
+        self.groupBoxSliderx.setMinimumHeight(50)
 
         """
         cài đặt giá trị 0->1 cho slide brush
         """
         self.opacity_thicknesss = QSlider(Qt.Horizontal)
-        self.opacity_thicknesss.setMinimum(60)
+        self.opacity_thicknesss.setMinimum(10)
         self.opacity_thicknesss.setMaximum(100)
         self.opacity_thicknesss.setValue(100)
         self.opacity_thicknesss.valueChanged.connect(self.opacitySliderChange)
@@ -455,32 +510,31 @@ class Window(QMainWindow):
         """
         hiển thị thông số size của brush
         """
-        self.opacityLabel = QLabel()
-        self.opacityLabel.setText("%s px" % self.imageArea.opacity)
+        # self.opacityLabel = QLabel()
+        # self.opacityLabel.setText("%s px" % self.imageArea.opacity)
 
         """
        add widget to layout
         """
         qv = QVBoxLayout()
         qv.addWidget(self.opacity_thicknesss)
-        qv.addWidget(self.opacityLabel)
+        # qv.addWidget(self.opacityLabel)
         self.groupBoxSliderx.setLayout(qv)
 
         self.box.vbox.addWidget(self.groupBoxSliderx)
 
     """
-   thay đổi giá trị dựa trên slider
+    thay đổi giá trị dựa trên slider
     """
     def opacitySliderChange(self, value):
         newValue = value * 0.01
         self.imageArea.opacity = newValue
-        self.setWindowOpacity(newValue)
-        self.opacityLabel.setText("%s px" % newValue)
+        
+        # self.setWindowOpacity(newValue)
+        # self.opacityLabel.setText("%s /%" % newValue)
+        self.imageArea.opacityDrawZone(value)
+        # self.update()
 
-
-    def sizeSliderChange(self, value):
-        self.imageArea.brushSize = value
-        self.brushSizeLabel.setText("%s px" % value)
 
     """
     tạo layout cho vùng color
@@ -488,6 +542,7 @@ class Window(QMainWindow):
     def setColorChanger(self):
         self.groupBoxColor = QGroupBox("Color")
         self.groupBoxColor.setMaximumHeight(100)
+        self.groupBoxColor.setMaximumHeight(50)
 
         """
         tạo color và cài đặt cho button với màu color này
