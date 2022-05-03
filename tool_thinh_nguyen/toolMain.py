@@ -1,8 +1,5 @@
-from asyncio import events
-from email.mime import image
 import sys
 from enum import Enum
-from tkinter import E
 from PySide2.QtGui import QPainter,QPen,QIcon ,QImage,QColor,QMouseEvent,QResizeEvent
 from PySide2.QtWidgets import QApplication,QWidget,QHBoxLayout,QLabel,QSizeGrip,QVBoxLayout,QGraphicsOpacityEffect,QMainWindow,QGridLayout,QAction,QGroupBox,QRadioButton,QSlider,QFileDialog,QMessageBox,QColorDialog,QPushButton
 from PySide2.QtCore import QPoint,Qt,QEvent,QObject,QSize,QCoreApplication 
